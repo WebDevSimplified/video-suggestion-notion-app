@@ -8,9 +8,10 @@ const app = express()
 
 app.set("views", "./views")
 app.set("view engine", "ejs")
-// app.set("trust proxy", 1)
+app.set("trust proxy", 1)
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
+app.use(requireHTTPS)
 
 const ONE_HOUR_IN_MILLISECONDS = 1000 * 60 * 60
 const ONE_DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
@@ -35,7 +36,8 @@ router.get("/", async (req, res) => {
       atStart: currentPageCursor == null,
       ...suggestionResults,
     })
-  } catch {
+  } catch (e) {
+    console.error(e)
     res.status(500).send("Error")
   }
 })
@@ -59,7 +61,8 @@ router.post(
           return { id: tagId }
         }),
       })
-    } catch {
+    } catch (e) {
+      console.error(e)
       res.status(500).send("Error")
     }
     res.redirect("/suggestions")
@@ -79,10 +82,23 @@ router.post(
     try {
       const votes = await notion.upVoteSuggestion(req.body.suggestionId)
       res.json({ votes })
-    } catch {
+    } catch (e) {
+      console.error(e)
       res.status(500).send("Error")
     }
   }
 )
+
+function requireHTTPS(req, res, next) {
+  // The 'x-forwarded-proto' check is for Heroku
+  if (
+    !req.secure &&
+    req.get("x-forwarded-proto") !== "https" &&
+    process.env.NODE_ENV !== "development"
+  ) {
+    return res.redirect("https://" + req.get("host") + req.url)
+  }
+  next()
+}
 
 app.listen(process.env.PORT)
