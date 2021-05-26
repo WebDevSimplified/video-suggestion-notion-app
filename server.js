@@ -35,7 +35,7 @@ router.get("/", async (req, res) => {
       atStart: currentPageCursor == null,
       ...suggestionResults,
     })
-  } catch (e) {
+  } catch {
     res.status(500).send("Error")
   }
 })
@@ -59,7 +59,7 @@ router.post(
           return { id: tagId }
         }),
       })
-    } catch (e) {
+    } catch {
       res.status(500).send("Error")
     }
     res.redirect("/suggestions")
@@ -79,7 +79,7 @@ router.post(
     try {
       const votes = await notion.upVoteSuggestion(req.body.suggestionId)
       res.json({ votes })
-    } catch (e) {
+    } catch {
       res.status(500).send("Error")
     }
   }
