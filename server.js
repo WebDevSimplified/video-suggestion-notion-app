@@ -57,7 +57,7 @@ router.post(
         title,
         description,
         isProject: isProject != null,
-        tags: tagIds.map(tagId => {
+        tags: (Array.isArray(tagIds) ? tagIds : [tagIds]).map(tagId => {
           return { id: tagId }
         }),
       })
