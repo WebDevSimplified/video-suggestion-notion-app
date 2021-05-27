@@ -4,6 +4,7 @@ const filter = new Filter()
 
 const DATABASE_ID = process.env.NOTION_DATABASE_ID
 const notion = new Client({ auth: process.env.NOTION_API_KEY })
+const REPORT_LIMIT = 2
 
 async function getSuggestion(id) {
   const notionPage = await notion.pages.retrieve({ page_id: id })
@@ -20,6 +21,10 @@ async function getSuggestions(startCursor) {
         direction: "descending",
       },
     ],
+    filter: {
+      property: process.env.NOTION_REPORTS_ID,
+      number: { less_than: REPORT_LIMIT },
+    },
   })
 
   return {
@@ -30,7 +35,9 @@ async function getSuggestions(startCursor) {
 }
 
 function createSuggestion(suggestion) {
-  return notion.pages.create(toNotionObject({ ...suggestion, votes: 0 }))
+  return notion.pages.create(
+    toNotionObject({ ...suggestion, votes: 0, reports: 0 })
+  )
 }
 
 async function upVoteSuggestion(id) {
@@ -45,6 +52,18 @@ async function upVoteSuggestion(id) {
   return votes
 }
 
+async function reportSuggestion(id) {
+  const suggestion = await getSuggestion(id)
+  const reports = suggestion.reports + 1
+  await notion.pages.update({
+    page_id: id,
+    properties: {
+      [process.env.NOTION_REPORTS_ID]: { number: reports },
+    },
+  })
+  return reports
+}
+
 async function getTags() {
   const database = await notion.databases.retrieve({ database_id: DATABASE_ID })
   return notionPropertiesById(database.properties)[
@@ -54,7 +73,15 @@ async function getTags() {
   })
 }
 
-function toNotionObject({ title, tags, isProject, description, votes }) {
+function toNotionObject({
+  title,
+  tags,
+  isProject,
+  description,
+  votes,
+  reports,
+  ip,
+}) {
   return {
     parent: {
       database_id: DATABASE_ID,
@@ -78,6 +105,15 @@ function toNotionObject({ title, tags, isProject, description, votes }) {
           },
         ],
       },
+      [process.env.NOTION_IP_ID]: {
+        rich_text: [
+          {
+            text: {
+              content: ip,
+            },
+          },
+        ],
+      },
       [process.env.NOTION_TAGS_SELECT_ID]: {
         multi_select: tags.map(tag => {
           return { id: tag.id }
@@ -85,6 +121,9 @@ function toNotionObject({ title, tags, isProject, description, votes }) {
       },
       [process.env.NOTION_VOTES_ID]: {
         number: votes,
+      },
+      [process.env.NOTION_REPORTS_ID]: {
+        number: reports,
       },
       [process.env.NOTION_PROJECT_CHECKBOX_ID]: {
         checkbox: isProject,
@@ -102,6 +141,7 @@ function fromNotionObject(notionPage) {
       propertiesById[process.env.NOTION_TITLE_ID].title[0].plain_text
     ),
     votes: propertiesById[process.env.NOTION_VOTES_ID].number,
+    reports: propertiesById[process.env.NOTION_REPORTS_ID].number,
     tags: propertiesById[process.env.NOTION_TAGS_SELECT_ID].multi_select.map(
       option => {
         return { id: option.id, name: option.name }
@@ -127,5 +167,7 @@ module.exports = {
   getSuggestion,
   createSuggestion,
   upVoteSuggestion,
+  reportSuggestion,
   getTags,
+  REPORT_LIMIT,
 }

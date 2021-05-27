@@ -57,6 +57,7 @@ router.post(
         title,
         description,
         isProject: isProject != null,
+        ip: req.ip,
         tags: (Array.isArray(tagIds) ? tagIds : [tagIds]).map(tagId => {
           return { id: tagId }
         }),
@@ -82,6 +83,26 @@ router.post(
     try {
       const votes = await notion.upVoteSuggestion(req.body.suggestionId)
       res.json({ votes })
+    } catch (e) {
+      console.error(e)
+      res.status(500).send("Error")
+    }
+  }
+)
+
+router.post(
+  "/report-suggestion",
+  rateLimit({
+    max: 1,
+    skipFailedRequests: true,
+    windowMs: ONE_DAY_IN_MILLISECONDS,
+    message: "You can only report each suggestion once",
+    keyGenerator: req => `${req.ip}-${req.body.suggestionId}`,
+  }),
+  async (req, res) => {
+    try {
+      const reports = await notion.reportSuggestion(req.body.suggestionId)
+      res.json({ remove: reports >= notion.REPORT_LIMIT })
     } catch (e) {
       console.error(e)
       res.status(500).send("Error")
