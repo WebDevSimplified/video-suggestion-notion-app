@@ -3,6 +3,7 @@ const express = require("express")
 const notion = require("./notion")
 const path = require("path")
 const rateLimit = require("express-rate-limit")
+const bannedIps = require("./bannedIps.json")
 
 const app = express()
 
@@ -12,6 +13,7 @@ app.set("trust proxy", 1)
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 app.use(requireHTTPS)
+app.use(checkForBannedIp)
 
 const ONE_HOUR_IN_MILLISECONDS = 1000 * 60 * 60
 const ONE_DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
@@ -119,6 +121,12 @@ function requireHTTPS(req, res, next) {
   ) {
     return res.redirect("https://" + req.get("host") + req.url)
   }
+  next()
+}
+
+function checkForBannedIp(req, res, next) {
+  console.log(req.ip)
+  if (bannedIps.includes(req.ip)) return res.status(500).send("Error")
   next()
 }
 
