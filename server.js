@@ -125,7 +125,6 @@ function requireHTTPS(req, res, next) {
 }
 
 function checkForBannedIp(req, res, next) {
-  console.log(req.ip)
   if (bannedIps.includes(req.ip)) return res.status(500).send("Error")
   next()
 }
