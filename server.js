@@ -14,6 +14,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 app.use(requireHTTPS)
 app.use(checkForBannedIp)
+app.use(shutdown)
 
 const ONE_HOUR_IN_MILLISECONDS = 1000 * 60 * 60
 const ONE_DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
@@ -127,6 +128,10 @@ function requireHTTPS(req, res, next) {
 function checkForBannedIp(req, res, next) {
   if (bannedIps.includes(req.ip)) return res.status(500).send("Error")
   next()
+}
+
+function shutdown(req, res, next) {
+  res.status(500).send("This app is temporarily down")
 }
 
 app.listen(process.env.PORT)
