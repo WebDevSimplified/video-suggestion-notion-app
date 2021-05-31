@@ -80,7 +80,7 @@ function toNotionObject({
   description,
   votes,
   reports,
-  ip,
+  email,
 }) {
   return {
     parent: {
@@ -105,11 +105,11 @@ function toNotionObject({
           },
         ],
       },
-      [process.env.NOTION_IP_ID]: {
+      [process.env.NOTION_EMAIL_ID]: {
         rich_text: [
           {
             text: {
-              content: ip,
+              content: email,
             },
           },
         ],

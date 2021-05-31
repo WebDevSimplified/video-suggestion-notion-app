@@ -66,7 +66,7 @@ router.post(
         title,
         description,
         isProject: isProject != null,
-        ip: req.ip,
+        email: req.email,
         tags: (Array.isArray(tagIds) ? tagIds : [tagIds]).map(tagId => {
           return { id: tagId }
         }),
@@ -148,6 +148,7 @@ function requiresAuth(req, res, next) {
     .verifyIdToken(req.body.firebaseToken)
     .then(decodedToken => {
       req.userUid = decodedToken.uid
+      req.email = decodedToken.email
       next()
     })
     .catch(error => {
