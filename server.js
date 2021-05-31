@@ -3,7 +3,12 @@ const express = require("express")
 const notion = require("./notion")
 const path = require("path")
 const rateLimit = require("express-rate-limit")
+const admin = require("firebase-admin")
 const bannedIps = require("./bannedIps.json")
+
+admin.initializeApp({
+  credential: admin.credential.applicationDefault(),
+})
 
 const app = express()
 
@@ -14,7 +19,6 @@ app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 app.use(requireHTTPS)
 app.use(checkForBannedIp)
-app.use(shutdown)
 
 const ONE_HOUR_IN_MILLISECONDS = 1000 * 60 * 60
 const ONE_DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24
@@ -47,11 +51,13 @@ router.get("/", async (req, res) => {
 
 router.post(
   "/create-suggestion",
+  requiresAuth,
   rateLimit({
     max: 2,
     skipFailedRequests: true,
     windowMs: ONE_DAY_IN_MILLISECONDS,
     message: "You can only create 2 suggestions per day",
+    keyGenerator: req => req.userUid,
   }),
   async (req, res) => {
     try {
@@ -75,12 +81,13 @@ router.post(
 
 router.post(
   "/up-vote-suggestion",
+  requiresAuth,
   rateLimit({
     max: 1,
     skipFailedRequests: true,
     windowMs: ONE_DAY_IN_MILLISECONDS,
     message: "You can only up vote each suggestion once",
-    keyGenerator: req => `${req.ip}-${req.body.suggestionId}`,
+    keyGenerator: req => `${req.userUid}-${req.body.suggestionId}`,
   }),
   async (req, res) => {
     try {
@@ -95,12 +102,13 @@ router.post(
 
 router.post(
   "/report-suggestion",
+  requiresAuth,
   rateLimit({
     max: 1,
     skipFailedRequests: true,
     windowMs: ONE_DAY_IN_MILLISECONDS,
     message: "You can only report each suggestion once",
-    keyGenerator: req => `${req.ip}-${req.body.suggestionId}`,
+    keyGenerator: req => `${req.userUid}-${req.body.suggestionId}`,
   }),
   async (req, res) => {
     try {
@@ -130,8 +138,22 @@ function checkForBannedIp(req, res, next) {
   next()
 }
 
-function shutdown(req, res, next) {
-  res.status(500).send("This app is temporarily down")
+function requiresAuth(req, res, next) {
+  if (req.body.firebaseToken == null) {
+    return res.status(500).send("You must be authenticated to do this")
+  }
+
+  admin
+    .auth()
+    .verifyIdToken(req.body.firebaseToken)
+    .then(decodedToken => {
+      req.userUid = decodedToken.uid
+      next()
+    })
+    .catch(error => {
+      console.error(error)
+      res.status(500).send("Error")
+    })
 }
 
 app.listen(process.env.PORT)

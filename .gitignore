@@ -1,3 +1,4 @@
 node_modules
 .env
 bannedIps.json
+firebase-credentials.json
