@@ -140,7 +140,7 @@ function checkForBannedIp(req, res, next) {
 
 function requiresAuth(req, res, next) {
   if (req.body.firebaseToken == null) {
-    return res.status(500).send("You must be authenticated to do this")
+    return res.status(401).send("You must be authenticated to do this")
   }
 
   admin

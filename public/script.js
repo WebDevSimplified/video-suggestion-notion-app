@@ -12,7 +12,7 @@ document.querySelector("[data-form]").addEventListener("submit", e => {
 })
 
 function handleUpVote(button) {
-  if (firebaseToken == null) return
+  if (firebaseToken == null) return alert("You must be signed in to vote")
   const suggestionCard = button.closest("[data-suggestion-id]")
   button.disabled = true
   fetch("/suggestions/up-vote-suggestion", {
@@ -40,7 +40,9 @@ function handleUpVote(button) {
 }
 
 function handleReportVote(button) {
-  if (firebaseToken == null) return
+  if (firebaseToken == null) {
+    return alert("You must be signed in to report suggestions")
+  }
   const suggestionCard = button.closest("[data-suggestion-id]")
   button.disabled = true
   fetch("/suggestions/report-suggestion", {
