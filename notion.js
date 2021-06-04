@@ -135,11 +135,13 @@ function toNotionObject({
 function fromNotionObject(notionPage) {
   const propertiesById = notionPropertiesById(notionPage.properties)
 
+  const title = propertiesById[process.env.NOTION_TITLE_ID].title[0].plain_text
+  const description =
+    propertiesById[process.env.NOTION_DESCRIPTION_ID].rich_text[0].text.content
+
   return {
     id: notionPage.id,
-    title: filter.clean(
-      propertiesById[process.env.NOTION_TITLE_ID].title[0].plain_text
-    ),
+    title: filter.clean(`a ${title}`).replace(/^a /, ""),
     votes: propertiesById[process.env.NOTION_VOTES_ID].number,
     reports: propertiesById[process.env.NOTION_REPORTS_ID].number,
     tags: propertiesById[process.env.NOTION_TAGS_SELECT_ID].multi_select.map(
@@ -148,10 +150,7 @@ function fromNotionObject(notionPage) {
       }
     ),
     isProject: propertiesById[process.env.NOTION_PROJECT_CHECKBOX_ID].checkbox,
-    description: filter.clean(
-      propertiesById[process.env.NOTION_DESCRIPTION_ID].rich_text[0].text
-        .content
-    ),
+    description: filter.clean(`a ${description}`).replace(/^a /, ""),
   }
 }
 
